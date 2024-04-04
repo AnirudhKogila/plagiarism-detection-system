@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 import torch
 
 pd.options.mode.chained_assignment = None
-plt.switch_backend('agg')
+plt.switch_backend('TkAgg')
 
 if __name__ == '__main__':
     train_df = torch.load('train_tok.pt')  # Load the tokenized training data
