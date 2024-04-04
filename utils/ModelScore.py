@@ -1,7 +1,9 @@
-from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, roc_auc_score
 import matplotlib.ticker as mticker
 import torch
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 def plot_loss(history):
     x = range(1, len(history['train loss'])+1)
