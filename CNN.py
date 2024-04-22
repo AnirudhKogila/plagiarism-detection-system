@@ -1,18 +1,18 @@
 from utils.DataGenerator import pad, generateData
-from utils.model_helper import DEVICE, SBERT_VERSION, MAX_SENT_LENGTH, MAX_PARA_LENGTH, N_HEAD, TRANS_DROPOUT, TRANS_LAYER, TRANS_LR
-from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, TRANS_N_HIDDEN, EMB_SIZE, BATCH_SIZE, N_EPOCH
+from utils.model_helper import DEVICE, SBERT_VERSION, MAX_SENT_LENGTH, MAX_PARA_LENGTH
+from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, N_HIDDEN, CNN_WINDOWS, CNN_LR, EMB_SIZE, BATCH_SIZE, N_EPOCH
 from utils.ModelScore import ProduceAUC, plot_loss
 import numpy as np
 from tqdm import tqdm
 from transformers import AutoModel
 import torch
-from torch import nn
-from models.TransformerModel import TransformerModel
+import torch.nn as nn
+from models.CNNModel import CNNModel
 
 
 def train(model, encoder, criterion, optimizer, train_generator, val_generator, history, model_dir, hist_dir, prev_ep_val_loss = 100):
-    num_epoch = N_EPOCH
-    patience = 100
+    num_epoch = N_EPOCH         
+    patience = 2                
     earlystop_cnt = 0
 
     for epoch in range(num_epoch):
@@ -37,7 +37,6 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
             train_loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
 
             train_epoch_loss += y_pred.shape[0] * train_loss.item()
             instance_cnt += len(id)
@@ -45,7 +44,7 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
         train_epoch_loss /= instance_cnt
         history['train loss'].append(train_epoch_loss)
 
-
+        
         instance_cnt = 0
         for ids, ids_b, label, id in tqdm(val_generator):
             pad(ids, MAX_PARA_LENGTH, MAX_SENT_LENGTH)
@@ -58,7 +57,7 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
                 emb = encoder(idst).last_hidden_state.view(-1, MAX_PARA_LENGTH, MAX_SENT_LENGTH, EMB_SIZE)
                 emb_b = encoder(ids_bt).last_hidden_state.view(-1, MAX_PARA_LENGTH, MAX_SENT_LENGTH, EMB_SIZE)
 
-                y_pred = model(emb, emb_b).to(DEVICE)   
+                y_pred = model(emb, emb_b).to(DEVICE) 
                 y_true = torch.as_tensor(label, dtype = torch.float32).to(DEVICE)
                 val_loss = criterion(y_pred, y_true)
 
@@ -74,6 +73,7 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
         if val_epoch_loss < prev_ep_val_loss:
             print(f'Improved from previous epoch ({prev_ep_val_loss:.4f}), model checkpoint saved to {model_dir}.')
             earlystop_cnt = 0
+            
             SAVE_MODEL(model, optimizer, model_dir, val_epoch_loss)
             prev_ep_val_loss = val_epoch_loss
         else:
@@ -83,11 +83,11 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
             else:
                 print(f'No improvement from previous epoch ({prev_ep_val_loss:.4f})')
                 break
-        
 
 # def eval(model, encoder, test_generator):
+    
 #     score_df = torch.load('score.pt')
-#     record = input('Enter new record name:')
+#     record = input('Enter new record name:') 
 #     score_df[record] = np.nan
 
 #     for ids, ids_b, label, id in tqdm(test_generator):
@@ -107,7 +107,9 @@ def train(model, encoder, criterion, optimizer, train_generator, val_generator, 
 #             score_df[record][id[i]] = y_pred.detach().numpy()[i]
 
 #     torch.save(score_df, 'score.pt')
+    
 #     ProduceAUC()
+
 
 
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, mean_squared_error, confusion_matrix
@@ -148,7 +150,7 @@ def eval(model, encoder, test_generator):
     y_pred_binary = (np.array(y_pred) > 0.5).astype(int)
     # Calculate and display metrics
     f1 = f1_score(y_true, y_pred > 0.5)
-    acc = accuracy_score(y_true, y_pred_binary)
+    acc = accuracy_score(y_true, y_pred > 0.5)
     prec = precision_score(y_true, y_pred > 0.5)
     rec = recall_score(y_true, y_pred > 0.5)
     cos_sim = 1 - cosine(y_true, y_pred)
@@ -172,38 +174,34 @@ if __name__ == "__main__":
 
     option, model_dir, hist_dir = MENU()
 
-    config = {"emb_size": EMB_SIZE, 
-              "max_n_sent": MAX_PARA_LENGTH, 
-              "n_hidden": TRANS_N_HIDDEN, 
-              "n_head": N_HEAD, 
-              "n_layers": TRANS_LAYER, 
-              "dropout": TRANS_DROPOUT}
-
-    transformer = TransformerModel(**config).to(DEVICE)
+    config = {"emb_size":EMB_SIZE,"max_n_sent":MAX_PARA_LENGTH,"sent_length": MAX_SENT_LENGTH,"n_hidden":N_HIDDEN,"windows":CNN_WINDOWS}
+    CNNmodel = CNNModel(**config).to(DEVICE)
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(transformer.parameters(), lr = TRANS_LR)
+    optimizer = torch.optim.Adam(CNNmodel.parameters(), lr = CNN_LR)
+
 
     if option == '1':    
         history = {'train loss':[], 'val loss':[]}
-        train(transformer, encoder, criterion, optimizer, train_generator, val_generator, history, model_dir, hist_dir)
+        train(CNNmodel, encoder, criterion, optimizer, train_generator, val_generator, history, model_dir, hist_dir)
         plot_loss(history)
     
+
     elif option == '2':   
         checkpoint = torch.load(model_dir)
-        transformer.load_state_dict(checkpoint['model_state_dict'])
+        CNNmodel.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         history = torch.load(hist_dir)
         val_loss = checkpoint['validation_loss']
-        transformer.train()
-        train(transformer, encoder, criterion, optimizer, train_generator, val_generator, history, model_dir, hist_dir, val_loss)
+        CNNmodel.train()
+        train(CNNmodel, encoder, criterion, optimizer, train_generator, val_generator, history, model_dir, hist_dir, val_loss)
         plot_loss(history)
     
 
     else:    
         checkpoint = torch.load(model_dir)
-        transformer.load_state_dict(checkpoint['model_state_dict'])
+        CNNmodel.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         val_loss = checkpoint['validation_loss']
 
-        transformer.eval()
-        eval(transformer, encoder, test_generator)
+        CNNmodel.eval()
+        eval(CNNmodel, encoder, test_generator)

@@ -29,7 +29,7 @@ def remove_1_sent(df, col):
 
         for s in sent_ls.copy():
             if ' ' not in s or len(s) <= 5:
-                sent_ls.remove(s)
+            	sent_ls.remove(s)
 
         if len(sent_ls) <= 1:
             to_be_removed.append(i)

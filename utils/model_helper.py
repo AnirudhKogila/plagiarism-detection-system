@@ -5,7 +5,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SBERT_VERSION = "sentence-transformers/paraphrase-mpnet-base-v2"
 MAX_SENT_LENGTH = 128
 MAX_PARA_LENGTH = 8
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 EMB_SIZE = 768
 
 N_HIDDEN = 100
