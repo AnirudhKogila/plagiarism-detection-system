@@ -1,6 +1,6 @@
 from utils.DataGenerator import pad, generateData
-from utils.model_helper import DEVICE, SBERT_VERSION, MAX_SENT_LENGTH, MAX_PARA_LENGTH, N_HEAD, TRANS_DROPOUT, TRANS_LAYER, TRANS_LR
-from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, TRANS_N_HIDDEN, EMB_SIZE, BATCH_SIZE, N_EPOCH
+from utils.model_helper import DEVICE, SBERT_VERSION, MAX_SENT_LENGTH, MAX_PARA_LENGTH, HP_SBERT_AHEADS, TRANS_DROPOUT, HP_SBERT_LAYERS, HP_LR_SBERT
+from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, HP_SBERT_HIDDEN, EMB_SIZE, BATCH_SIZE, N_EPOCH
 from utils.ModelScore import ProduceAUC, plot_loss
 import numpy as np
 from tqdm import tqdm
@@ -174,14 +174,14 @@ if __name__ == "__main__":
 
     config = {"emb_size": EMB_SIZE, 
               "max_n_sent": MAX_PARA_LENGTH, 
-              "n_hidden": TRANS_N_HIDDEN, 
-              "n_head": N_HEAD, 
-              "n_layers": TRANS_LAYER, 
+              "n_hidden": HP_SBERT_HIDDEN, 
+              "HP_SBERT_AHEADS": HP_SBERT_AHEADS, 
+              "n_layers": HP_SBERT_LAYERS, 
               "dropout": TRANS_DROPOUT}
 
     transformer = TransformerModel(**config).to(DEVICE)
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(transformer.parameters(), lr = TRANS_LR)
+    optimizer = torch.optim.Adam(transformer.parameters(), lr = HP_LR_SBERT)
 
     if option == '1':    
         history = {'train loss':[], 'val loss':[]}

@@ -1,6 +1,6 @@
 from utils.DataGenerator import pad, generateData
 from utils.model_helper import DEVICE, SBERT_VERSION, MAX_SENT_LENGTH, MAX_PARA_LENGTH
-from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, N_HIDDEN, CNN_WINDOWS, CNN_LR, EMB_SIZE, BATCH_SIZE, N_EPOCH
+from utils.model_helper import MENU, SAVE_HISTORY, SAVE_MODEL, N_HIDDEN, HP_WINDOWS_SIZE, HP_LR_CNN, EMB_SIZE, BATCH_SIZE, N_EPOCH
 from utils.ModelScore import ProduceAUC, plot_loss
 import numpy as np
 from tqdm import tqdm
@@ -174,10 +174,10 @@ if __name__ == "__main__":
 
     option, model_dir, hist_dir = MENU()
 
-    config = {"emb_size":EMB_SIZE,"max_n_sent":MAX_PARA_LENGTH,"sent_length": MAX_SENT_LENGTH,"n_hidden":N_HIDDEN,"windows":CNN_WINDOWS}
+    config = {"emb_size":EMB_SIZE,"max_n_sent":MAX_PARA_LENGTH,"sent_length": MAX_SENT_LENGTH,"n_hidden":N_HIDDEN,"windows":HP_WINDOWS_SIZE}
     CNNmodel = CNNModel(**config).to(DEVICE)
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(CNNmodel.parameters(), lr = CNN_LR)
+    optimizer = torch.optim.Adam(CNNmodel.parameters(), lr = HP_LR_CNN)
 
 
     if option == '1':    

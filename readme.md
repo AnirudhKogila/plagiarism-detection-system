@@ -1,7 +1,7 @@
 # Plagiarism Detection System
 
 
-## Steps to Run Source Code:
+## Steps to Run Source Code
 
 1. **Install Dependencies**: Install all the required packages listed in the `requirements.txt` file.
 

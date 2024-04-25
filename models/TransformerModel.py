@@ -5,13 +5,13 @@ from torch import nn, Tensor
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 class TransformerModel(nn.Module):
-    def __init__(self, emb_size, max_n_sent, n_hidden, n_head, n_layers, dropout):
+    def __init__(self, emb_size, max_n_sent, n_hidden, HP_SBERT_AHEADS, n_layers, dropout):
         super().__init__()
         self.model_type = 'Transformer'
         self.emb_size = emb_size
         self.pos_encoder = PositionalEncoding(emb_size, max_n_sent, dropout)
 
-        encoder_layers = TransformerEncoderLayer(emb_size, n_head, n_hidden, dropout)
+        encoder_layers = TransformerEncoderLayer(emb_size, HP_SBERT_AHEADS, n_hidden, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, n_layers)
         self.decoder = nn.CosineSimilarity(dim = 1)
         self.pooling = nn.MaxPool1d(kernel_size = max_n_sent)
